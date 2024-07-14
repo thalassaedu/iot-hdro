@@ -24,7 +24,7 @@ This is Hydroponic IOT repository.
         pip3 install -r requirements.txt
     - Deactivated
         deactivate
-
+    - pip3 install flask mysql-connector-python
 
 
 
@@ -43,5 +43,14 @@ This is Hydroponic IOT repository.
         - Create service - it is using node IP.
     - Mysql connection:
         - Use node IP : 192.168.2.177 over port 30036 - database mysql - user root/Abcd1234
+
+## Running sessoin on background: 
+    115096.mysession
+    - screen -S mysession
+    - Press Ctrl+A, then D. This will detach the session and keep your script running in the background.
+
+        Disconnect from SSH:
+
+        Simply log out or close the terminal.
 
         

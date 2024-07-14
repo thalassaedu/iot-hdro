@@ -1,0 +1,135 @@
+#include <ArduinoJson.h>
+#include <DFRobot_DHT11.h>
+#include <ESPAsyncWebServer.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// Replace with your network credentials
+const char* ssid = "WLAN-45K2FB";
+const char* password = "51265629093004418224";
+
+// DHT11 settings
+#define DHT11_PIN 15 // GPIO15 for DHT11 sensor
+
+// Soil moisture sensor settings
+const int hygrometer = 32; // Hygrometer sensor analog pin output connected to GPIO 32 of ESP32
+const int digitalOutput = 27; // Digital output pin for any additional functionality
+
+DFRobot_DHT11 dht;
+AsyncWebServer server(80);
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("DHT11 and Soil Moisture Sensor setup...");
+
+  // Initialize the digital output pin
+  pinMode(digitalOutput, OUTPUT);
+  digitalWrite(digitalOutput, LOW);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi ..");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.println();
+  Serial.println("Connected to WiFi");
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.localIP());
+
+  // Serve the root URL
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    dht.read(DHT11_PIN);
+    
+    int temperature = dht.temperature;
+    int humidity = dht.humidity;
+
+    // Read soil moisture value from hygrometer
+    int soilMoistureValue = analogRead(hygrometer); 
+    soilMoistureValue = constrain(soilMoistureValue, 400, 4095); // Ensure the read value is within expected range
+    soilMoistureValue = map(soilMoistureValue, 400, 4095, 100, 0); // Map the value to a percentage
+
+    if (temperature == -1 && humidity == -1) {
+      request->send(200, "application/json", "{\"error\":\"Failed to read from DHT sensor!\"}");
+    } else {
+      String message;
+      StaticJsonDocument<200> doc;
+      doc["humidity"] = humidity;
+      doc["temperature"] = temperature;
+      doc["soilMoisture"] = soilMoistureValue;
+      serializeJson(doc, message);
+      request->send(200, "application/json", message);
+    }
+  });
+
+  // Start the server
+  server.begin();
+}
+
+void loop() {
+  delay(2000);
+
+  dht.read(DHT11_PIN);
+
+  int temperature = dht.temperature;
+  int humidity = dht.humidity;
+
+  // Read soil moisture value from hygrometer
+  int soilMoistureValue = analogRead(hygrometer); 
+  soilMoistureValue = constrain(soilMoistureValue, 400, 4095); // Ensure the read value is within expected range
+  soilMoistureValue = map(soilMoistureValue, 400, 4095, 100, 0); // Map the value to a percentage
+
+  if (temperature == -1 && humidity == -1) {
+    Serial.println("Failed to read from DHT sensor!");
+    return;
+  }
+
+  // Send data to Python API
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    http.begin("http://192.168.2.162:8081/update");
+
+    String httpRequestData = "temperature=" + String(temperature) +
+                             "&humidity=" + String(humidity) +
+                             "&soilMoisture=" + String(soilMoistureValue);
+
+    http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+    int httpResponseCode = http.POST(httpRequestData);
+
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.println(httpResponseCode);
+      Serial.println(response);
+    } else {
+      Serial.print("Error on sending POST: ");
+      Serial.println(httpResponseCode);
+    }
+    http.end();
+  } else {
+    Serial.println("Error in WiFi connection");
+  }
+
+  // Send data to Serial Monitor
+  Serial.print("Humidity: ");
+  Serial.print(humidity);
+  Serial.print("%, ");
+  Serial.print("Temperature: ");
+  Serial.print(temperature);
+  Serial.print("°C, ");
+  Serial.print("Soil Moisture: ");
+  Serial.print(soilMoistureValue);
+  Serial.println("%");
+
+  // Check the soil moisture level and provide feedback
+  if (soilMoistureValue < 60) {
+    Serial.println("Soil is dry. Consider watering.");
+    digitalWrite(digitalOutput, HIGH); // Turn on the digital output (e.g., to trigger a pump)
+  } else if (soilMoistureValue >= 60 && soilMoistureValue <= 70) {
+    Serial.println("Soil moisture is optimal for cucumber plants.");
+    digitalWrite(digitalOutput, LOW); // Turn off the digital output
+  } else {
+    Serial.println("Soil is too wet for cucumber plants. Avoid overwatering.");
+    digitalWrite(digitalOutput, LOW); // Turn off the digital output
+  }
+}

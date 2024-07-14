@@ -1,0 +1,17 @@
+#define TDS_PIN 33 // Define the GPIO pin where the signal wire is connected
+
+void setup() {
+  Serial.begin(115200); // Start the serial communication at 115200 baud rate
+  pinMode(TDS_PIN, INPUT); // Set the TDS pin as an input
+}
+
+void loop() {
+  int tdsValue = analogRead(TDS_PIN); // Read the analog value from the TDS sensor
+  float voltage = tdsValue * (3.3 / 4095.0); // Convert the analog reading to voltage (assuming 3.3V reference and 12-bit ADC)
+  Serial.print("TDS Value: ");
+  Serial.println(tdsValue);
+  Serial.print("Voltage: ");
+  Serial.println(voltage);
+  
+  delay(1000); // Wait for a second before taking another reading
+}
