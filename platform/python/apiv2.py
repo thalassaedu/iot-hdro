@@ -2,8 +2,6 @@ from flask import Flask, request, jsonify
 import mysql.connector
 from mysql.connector import Error
 
-
-
 app = Flask(__name__)
 
 MYSQL_HOST = '192.168.2.194'
@@ -30,7 +28,7 @@ def insert_sensor_data(temperature, humidity, soil_moisture, light):
         record = (temperature, humidity, soil_moisture, light)
         cursor.execute(insert_query, record)
         connection.commit()
-        print("Record inserted successfully")
+        print("Record inserted successfully: ", record)
 
     except Error as error:
         print(f"Failed to insert record into MySQL table: {error}")
