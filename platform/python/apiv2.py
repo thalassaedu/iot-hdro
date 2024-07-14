@@ -2,6 +2,8 @@ from flask import Flask, request, jsonify
 import mysql.connector
 from mysql.connector import Error
 
+
+
 app = Flask(__name__)
 
 MYSQL_HOST = '192.168.2.194'
