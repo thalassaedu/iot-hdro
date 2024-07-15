@@ -45,12 +45,18 @@ This is Hydroponic IOT repository.
         - Use node IP : 192.168.2.177 over port 30036 - database mysql - user root/Abcd1234
 
 ## Running sessoin on background: 
-    115096.mysession
+    [detached from 3604.mysession]
     - screen -S mysession
     - Press Ctrl+A, then D. This will detach the session and keep your script running in the background.
 
         Disconnect from SSH:
 
         Simply log out or close the terminal.
+
+
+
+        git add .
+        git commit -m "updated"
+        git push
 
         
