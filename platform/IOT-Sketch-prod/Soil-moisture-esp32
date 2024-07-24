@@ -3,32 +3,31 @@ const int soilMoisturePins[6] = {34, 35, 32, 33, 25, 26};
 const char* plantLabels[6] = {"plant1", "plant2", "plant3", "plant4", "plant5", "plant6"};
 
 // Define the minimum and maximum sensor values for calibration
-const int airValue = 4095;  // Analog value in dry air
-const int waterValue = 0;   // Analog value in water
+const int airValue = 4095; // Analog value in dry air
+const int waterValue = 0; // Analog value in water
 
 void setup() {
-  // Initialize serial communication at 115200 baud rate
-  Serial.begin(115200);
+    // Initialize serial communication at 115200 baud rate
+    Serial.begin(115200);
+    Serial2.begin(9600); // Serial communication with Arduino
 }
 
 void loop() {
-  for (int i = 0; i < 6; i++) {
-    // Read the analog value from the soil moisture sensor
-    int soilMoistureValue = analogRead(soilMoisturePins[i]);
+    if (Serial2.available()) {
+        String data = Serial2.readStringUntil('\n');
+        String output = "Temperature value: ";
+        output += data;
+        for (int i = 0; i < 6; i++) {
+            int soilMoistureValue = analogRead(soilMoisturePins[i]);
+            int soilMoisturePercent = map(soilMoistureValue, airValue, waterValue, 0, 100);
+            soilMoisturePercent = constrain(soilMoisturePercent, 0, 100);
 
-    // Map the sensor value to a percentage
-    int soilMoisturePercent = map(soilMoistureValue, airValue, waterValue, 0, 100);
-
-    // Constrain the percentage to 0-100 range
-    soilMoisturePercent = constrain(soilMoisturePercent, 0, 100);
-
-    // Print the percentage to the Serial Monitor
-    Serial.print(plantLabels[i]);
-    Serial.print(" Soil Moisture Percent: ");
-    Serial.print(soilMoisturePercent);
-    Serial.println("%");
-  }
-
-  // Add a delay of 3 seconds
-  delay(3000); // Wait for 3 seconds before reading again
+            output += ", ";
+            output += plantLabels[i];
+            output += " soil_Moisture: ";
+            output += soilMoisturePercent;
+        }
+        Serial.println(output);
+    }
+    delay(1000);
 }
