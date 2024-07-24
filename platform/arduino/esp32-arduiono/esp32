@@ -145,7 +145,7 @@ void loop() {
 
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    http.begin("http://your_api_endpoint_url/update"); // Replace with your API endpoint URL
+    http.begin("http://192.168.2.162:8081/update"); // Replace with your API endpoint URL
 
     StaticJsonDocument<200> doc;
     doc["temperature"] = temperature;

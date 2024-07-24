@@ -1,0 +1,86 @@
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_TSL2591.h>
+
+#define INT_PIN 5  // Interrupt pin
+
+// Create the TSL2591 sensor object
+Adafruit_TSL2591 tsl = Adafruit_TSL2591(2591);
+
+// Flag to indicate interrupt
+volatile bool lightSensorTriggered = false;
+
+void displaySensorDetails() {
+  sensor_t sensor;
+  tsl.getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
+  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
+  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
+  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" lux");
+  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" lux");
+  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" lux");  
+  Serial.println("------------------------------------");
+  Serial.println("");
+  delay(500);
+}
+
+void configureSensor() {
+  // Set low gain for high light levels
+  tsl.setGain(TSL2591_GAIN_LOW); // Low gain (1x)
+
+  // Set shorter integration time for high light levels
+  tsl.setTiming(TSL2591_INTEGRATIONTIME_100MS);  // Medium integration time (100ms)
+}
+
+void lightSensorISR() {
+  lightSensorTriggered = true; // Set the flag when interrupt occurs
+}
+
+void setup(void) {
+  Serial.begin(9600);
+  Serial.println("Light Sensor Test");
+
+  pinMode(INT_PIN, INPUT_PULLUP);  // Set INT pin as input with pull-up resistor
+  attachInterrupt(digitalPinToInterrupt(INT_PIN), lightSensorISR, FALLING);
+
+  // Initialize the sensor
+  if (!tsl.begin()) {
+    Serial.print("No TSL2591 detected ... check your wiring or I2C ADDR!");
+    while (1);
+  }
+  
+  // Display some basic information about the sensor
+  displaySensorDetails();
+  
+  // Setup the sensor gain and integration time
+  configureSensor();
+  
+  // We're ready to go!
+  Serial.println("");
+}
+
+void loop(void) {
+  // Check for new sensor event triggered by the interrupt
+  if (lightSensorTriggered) {
+    // Clear the interrupt flag
+    lightSensorTriggered = false;
+    // Clear the interrupt on the sensor
+    tsl.clearInterrupt();
+  }
+
+  // Regularly read and display the light level in lux
+  sensors_event_t event;
+  tsl.getEvent(&event);
+  
+  // Display the results (light is measured in lux)
+  if (event.light) {
+    Serial.print(event.light); Serial.println(" lux");
+  } else {
+    // If event.light = 0 lux the sensor is probably saturated
+    // and no reliable data could be generated!
+    Serial.println("Sensor overload");
+  }
+
+  delay(2000); // Delay for 2 seconds between readings
+}

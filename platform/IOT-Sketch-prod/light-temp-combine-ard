@@ -1,0 +1,112 @@
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_TSL2591.h>
+#include <DHT11.h>
+
+// Pin definitions
+#define INT_PIN 5 // Interrupt pin for light sensor
+#define DHTPIN 6  // DHT11 data pin
+
+// Create the sensor objects
+Adafruit_TSL2591 tsl = Adafruit_TSL2591(2591);
+DHT11 dht11(DHTPIN);
+
+// Flag to indicate interrupt
+volatile bool lightSensorTriggered = false;
+
+// Function to display TSL2591 sensor details
+void displaySensorDetails() {
+  sensor_t sensor;
+  tsl.getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.print("Sensor: "); Serial.println(sensor.name);
+  Serial.print("Driver Ver: "); Serial.println(sensor.version);
+  Serial.print("Unique ID: "); Serial.println(sensor.sensor_id);
+  Serial.print("Max Value: "); Serial.print(sensor.max_value); Serial.println(" lux");
+  Serial.print("Min Value: "); Serial.print(sensor.min_value); Serial.println(" lux");
+  Serial.print("Resolution: "); Serial.print(sensor.resolution); Serial.println(" lux");
+  Serial.println("------------------------------------");
+  Serial.println("");
+  delay(500);
+}
+
+// Function to configure the TSL2591 sensor
+void configureSensor() {
+  tsl.setGain(TSL2591_GAIN_LOW); // Low gain (1x)
+  tsl.setTiming(TSL2591_INTEGRATIONTIME_100MS); // Medium integration time (100ms)
+}
+
+// Interrupt service routine for light sensor
+void lightSensorISR() {
+  lightSensorTriggered = true; // Set the flag when interrupt occurs
+}
+
+void setup() {
+  // Initialize serial communication
+  Serial.begin(9600);
+  Serial.println("Sensor Test");
+
+  // Initialize the DHT11 sensor
+  dht11 = DHT11(DHTPIN);
+
+  // Initialize the TSL2591 light sensor
+  pinMode(INT_PIN, INPUT_PULLUP); // Set INT pin as input with pull-up resistor
+  attachInterrupt(digitalPinToInterrupt(INT_PIN), lightSensorISR, FALLING);
+
+  if (!tsl.begin()) {
+    Serial.print("No TSL2591 detected ... check your wiring or I2C ADDR!");
+    while (1);
+  }
+
+  // Display basic information about the TSL2591 sensor
+  displaySensorDetails();
+  // Configure the TSL2591 sensor
+  configureSensor();
+
+  Serial.println("Initialization complete.\n");
+}
+
+void loop() {
+  int temperature = 0;
+  int humidity = 0;
+
+  // Read temperature and humidity from DHT11 sensor
+  int result = dht11.readTemperatureHumidity(temperature, humidity);
+
+  // Check the results of the DHT11 readings
+  if (result == 0) {
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.print(" °C\tHumidity: ");
+    Serial.print(humidity);
+    Serial.println(" %");
+  } else {
+    Serial.print("Error reading from DHT11 sensor: ");
+    Serial.println(DHT11::getErrorString(result));
+  }
+
+  // Check for new light sensor event triggered by the interrupt
+  if (lightSensorTriggered) {
+    // Clear the interrupt flag
+    lightSensorTriggered = false;
+    // Clear the interrupt on the sensor
+    tsl.clearInterrupt();
+  }
+
+  // Read and display the light level in lux
+  sensors_event_t event;
+  tsl.getEvent(&event);
+
+  if (event.light) {
+    Serial.print("Light Level: ");
+    Serial.print(event.light);
+    Serial.println(" lux");
+  } else {
+    // If event.light = 0 lux the sensor is probably saturated
+    // and no reliable data could be generated
+    Serial.println("Sensor overload");
+  }
+
+  // Delay for 2 seconds between readings
+  delay(2000);
+}
