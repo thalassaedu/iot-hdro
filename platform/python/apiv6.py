@@ -60,7 +60,8 @@ def update_data():
 
         temperature = float(parts[0].split(': ')[1].replace(' °C', ''))
         humidity = float(parts[1].split(': ')[1])
-        light = float(parts[2].split(': ')[1].replace(' lux', ''))
+        light_str = parts[2].split(': ')[1].replace(' lux', '')
+        light = float(light_str) if light_str != 'NAN' else 0
         nitrogen = int(parts[3].split(': ')[1].replace(' mg/kg', ''))
         phosphorus = int(parts[4].split(': ')[1].replace(' mg/kg', ''))
         potassium = int(parts[5].split(': ')[1].replace(' mg/kg', ''))
