@@ -55,13 +55,16 @@ def update_data():
     try:
         # Extract data for MySQL insertion
         parts = data.split(', ')
+        if len(parts) < 12:
+            raise ValueError("Insufficient data received")
+
         temperature = float(parts[0].split(': ')[1].replace(' °C', ''))
         humidity = float(parts[1].split(': ')[1])
         light = float(parts[2].split(': ')[1].replace(' lux', ''))
         nitrogen = int(parts[3].split(': ')[1].replace(' mg/kg', ''))
         phosphorus = int(parts[4].split(': ')[1].replace(' mg/kg', ''))
         potassium = int(parts[5].split(': ')[1].replace(' mg/kg', ''))
-        soil_moisture_values = ', '.join(parts[6:]).replace('Soil Moisture Sensor', 'Sensor')
+        soil_moisture_values = ', '.join(parts[6:]).replace('Soil Moisture Sensor', 'Sensor').replace('%', '')
 
         # Insert data into MySQL
         insert_sensor_data(temperature, humidity, soil_moisture_values, light, nitrogen, phosphorus, potassium)
