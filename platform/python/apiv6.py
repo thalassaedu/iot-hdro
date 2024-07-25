@@ -25,10 +25,10 @@ def insert_sensor_data(temperature, humidity, soil_moisture, light, nitrogen, ph
 
         cursor = connection.cursor()
         insert_query = """
-        INSERT INTO sensor_readings (temperature, humidity, soil_moisture, light, nitrogen, phosphorus, potassium)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO sensor_readings (temperature, humidity, soil_moisture1, soil_moisture2, soil_moisture3, soil_moisture4, soil_moisture5, soil_moisture6, light, nitrogen, phosphorus, potassium)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        record = (temperature, humidity, soil_moisture, light, nitrogen, phosphorus, potassium)
+        record = (temperature, humidity, soil_moisture[0], soil_moisture[1], soil_moisture[2], soil_moisture[3], soil_moisture[4], soil_moisture[5], light, nitrogen, phosphorus, potassium)
         cursor.execute(insert_query, record)
         connection.commit()
         print("Record inserted successfully: ", record)
@@ -65,10 +65,14 @@ def update_data():
         nitrogen = int(parts[3].split(': ')[1].replace(' mg/kg', ''))
         phosphorus = int(parts[4].split(': ')[1].replace(' mg/kg', ''))
         potassium = int(parts[5].split(': ')[1].replace(' mg/kg', ''))
-        soil_moisture_values = ', '.join(parts[6:]).replace('Soil Moisture Sensor', 'Sensor').replace('%', '')
+
+        # Extract soil moisture values
+        soil_moisture = []
+        for i in range(6):
+            soil_moisture.append(int(parts[6 + i].split(': ')[1]))
 
         # Insert data into MySQL
-        insert_sensor_data(temperature, humidity, soil_moisture_values, light, nitrogen, phosphorus, potassium)
+        insert_sensor_data(temperature, humidity, soil_moisture, light, nitrogen, phosphorus, potassium)
     except Exception as e:
         print(f"Error processing data: {e}")
         return jsonify({'error': 'Failed to process data'}), 500
