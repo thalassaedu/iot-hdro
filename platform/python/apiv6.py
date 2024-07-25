@@ -69,7 +69,7 @@ def update_data():
         # Extract soil moisture values
         soil_moisture = []
         for i in range(6):
-            soil_moisture.append(int(parts[6 + i].split(': ')[1]))
+            soil_moisture.append(int(parts[6 + i].split(': ')[1].replace('%', '')))
 
         # Insert data into MySQL
         insert_sensor_data(temperature, humidity, soil_moisture, light, nitrogen, phosphorus, potassium)
