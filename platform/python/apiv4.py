@@ -46,14 +46,23 @@ def update():
         return jsonify({'error': 'Invalid data format'}), 400
 
     try:
+        # Log the raw data received
+        print("Received data:", data)
+        
         # Parsing the data string
         parts = data.split(', ')
         
         # Ensure there are enough parts to parse
         if len(parts) < 12:
+            print("Not enough parts in data:", len(parts))
             return jsonify({'error': 'Not enough data parts received'}), 400
-
+        
+        # Extract and log individual parts
+        print("Data parts:", parts)
+        
         soil_moisture = ', '.join(parts[:6])
+        print("Soil Moisture:", soil_moisture)
+        
         temperature = float(parts[6].split(': ')[1].split(' ')[0])
         humidity = float(parts[7].split(': ')[1].split(' ')[0])
         light = float(parts[8].split(': ')[1].split(' ')[0])
@@ -64,6 +73,7 @@ def update():
         insert_sensor_data(temperature, humidity, soil_moisture, light, nitrogen, phosphorus, potassium)
         return jsonify({'status': 'success'}), 200
     except (IndexError, ValueError) as e:
+        print("Error parsing data:", e)
         return jsonify({'error': f'Failed to parse data: {e}'}), 400
 
 @app.route('/data', methods=['GET'])
