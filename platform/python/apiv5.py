@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -7,14 +7,14 @@ raw_arduino_data = []
 
 @app.route('/update_arduino', methods=['POST'])
 def update_arduino():
-    data = request.json.get('data')
+    data = request.data.decode('utf-8')
     if not data:
-        return {'error': 'Invalid data format'}, 400
+        return jsonify({'error': 'Invalid data format'}), 400
 
     # Append raw data to the in-memory list
     raw_arduino_data.append(data)
     print("Received raw data:", data)
-    return {'status': 'success'}, 200
+    return jsonify({'status': 'success'}), 200
 
 @app.route('/arduino-data', methods=['GET'])
 def get_arduino_data():
