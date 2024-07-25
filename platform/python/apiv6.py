@@ -61,10 +61,10 @@ def update_data():
         nitrogen = int(parts[3].split(': ')[1])
         phosphorus = int(parts[4].split(': ')[1])
         potassium = int(parts[5].split(': ')[1])
-        soil_moisture = ', '.join(parts[6:])
+        soil_moisture_values = ', '.join(parts[6:]).replace("Soil Moisture Sensor", "Sensor")
 
         # Insert data into MySQL
-        insert_sensor_data(temperature, humidity, soil_moisture, light, nitrogen, phosphorus, potassium)
+        insert_sensor_data(temperature, humidity, soil_moisture_values, light, nitrogen, phosphorus, potassium)
     except Exception as e:
         print(f"Error processing data: {e}")
         return jsonify({'error': 'Failed to process data'}), 500
