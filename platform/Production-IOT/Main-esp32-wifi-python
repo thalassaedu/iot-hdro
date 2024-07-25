@@ -1,0 +1,111 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// Wi-Fi credentials
+const char* ssid = "WLAN-45K2FB";
+const char* password = "51265629093004418224";
+
+// Server addresses
+const char* serverNameArduino = "http://192.168.2.162:8081/update_arduino";
+const char* serverNameESP32 = "http://192.168.2.162:8081/update_esp32";
+
+// Define the pins for each soil moisture sensor (using ADC1 pins)
+const int soilMoisturePins[6] = {32, 33, 34, 35, 36, 39};
+
+// Define the minimum and maximum sensor values for calibration
+const int airValue = 4095; // Analog value in dry air
+const int waterValue = 0;  // Analog value in water
+
+void setup() {
+    // Initialize serial communication at 9600 baud rate
+    Serial.begin(9600);
+
+    // Initialize Serial2 with the appropriate pins
+    Serial2.begin(9600, SERIAL_8N1, 16, 17); // RX on GPIO 16, TX on GPIO 17
+    Serial.println("Setup complete");
+
+    // Connect to Wi-Fi
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting to Wi-Fi...");
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("Connected!");
+}
+
+void loop() {
+    // Read soil moisture sensor values
+    int soilMoistureValues[6];
+    for (int i = 0; i < 6; i++) {
+        int soilMoistureValue = analogRead(soilMoisturePins[i]);
+        soilMoistureValues[i] = map(soilMoistureValue, airValue, waterValue, 0, 100);
+        soilMoistureValues[i] = constrain(soilMoistureValues[i], 0, 100);
+    }
+
+    // Send soil moisture data to the server
+    if (WiFi.status() == WL_CONNECTED) {
+        HTTPClient http;
+        http.begin(serverNameESP32);
+        http.addHeader("Content-Type", "application/json");
+
+        // Create JSON payload for soil moisture data
+        String jsonPayloadESP32 = "{\"soil_moisture1\":";
+        jsonPayloadESP32 += soilMoistureValues[0];
+        jsonPayloadESP32 += ",\"soil_moisture2\":";
+        jsonPayloadESP32 += soilMoistureValues[1];
+        jsonPayloadESP32 += ",\"soil_moisture3\":";
+        jsonPayloadESP32 += soilMoistureValues[2];
+        jsonPayloadESP32 += ",\"soil_moisture4\":";
+        jsonPayloadESP32 += soilMoistureValues[3];
+        jsonPayloadESP32 += ",\"soil_moisture5\":";
+        jsonPayloadESP32 += soilMoistureValues[4];
+        jsonPayloadESP32 += ",\"soil_moisture6\":";
+        jsonPayloadESP32 += soilMoistureValues[5];
+        jsonPayloadESP32 += "}";
+
+        int httpResponseCode = http.POST(jsonPayloadESP32);
+        if (httpResponseCode > 0) {
+            String response = http.getString();
+            Serial.println(httpResponseCode);
+            Serial.println(response);
+        } else {
+            Serial.print("Error on sending POST: ");
+            Serial.println(httpResponseCode);
+        }
+        http.end();
+    } else {
+        Serial.println("Wi-Fi not connected");
+    }
+
+    // Check for data on Serial2 from Arduino and send it to the server
+    if (Serial2.available()) {
+        String arduinoData = Serial2.readStringUntil('\n');
+
+        if (WiFi.status() == WL_CONNECTED) {
+            HTTPClient http;
+            http.begin(serverNameArduino);
+            http.addHeader("Content-Type", "application/json");
+
+            // Create JSON payload for Arduino data
+            String jsonPayloadArduino = "{\"data\":\"" + arduinoData + "\"}";
+
+            int httpResponseCode = http.POST(jsonPayloadArduino);
+            if (httpResponseCode > 0) {
+                String response = http.getString();
+                Serial.println(httpResponseCode);
+                Serial.println(response);
+            } else {
+                Serial.print("Error on sending POST: ");
+                Serial.println(httpResponseCode);
+            }
+            http.end();
+        } else {
+            Serial.println("Wi-Fi not connected");
+        }
+    } else {
+        Serial.println("No data available from Serial2");
+    }
+
+    delay(3000); // Delay for 3 seconds
+}
