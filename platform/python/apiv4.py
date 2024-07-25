@@ -48,7 +48,12 @@ def update():
     try:
         # Parsing the data string
         parts = data.split(', ')
-        soil_moisture = int(parts[5].split(': ')[1].split('%')[0])
+        
+        # Ensure there are enough parts to parse
+        if len(parts) < 12:
+            return jsonify({'error': 'Not enough data parts received'}), 400
+
+        soil_moisture = ', '.join(parts[:6])
         temperature = float(parts[6].split(': ')[1].split(' ')[0])
         humidity = float(parts[7].split(': ')[1].split(' ')[0])
         light = float(parts[8].split(': ')[1].split(' ')[0])
