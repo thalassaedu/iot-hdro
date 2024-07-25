@@ -20,10 +20,9 @@ def update_data():
 def get_data():
     formatted_data = []
     for entry in received_data:
-        # Reformat the data
-        entry = entry.replace(' °C', '').replace(' mg/kg', '').replace('%', '')
-        entry = entry.replace('Soil Moisture Values:', 'Soil Moisture ')
-        entry = entry.replace('Sensor ', 'Soil MoistureSensor')
+        entry = entry.replace(' °C', '').replace(' lux', '').replace(' mg/kg', '')
+        entry = entry.replace('Soil Moisture Values:', 'Soil Moisture')
+        entry = entry.replace('Sensor ', 'Sensor')
         formatted_data.append(entry)
     
     return '<br>'.join(formatted_data), 200
