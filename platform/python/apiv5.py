@@ -18,7 +18,15 @@ def update_data():
 
 @app.route('/data', methods=['GET'])
 def get_data():
-    return '<br>'.join(received_data), 200
+    formatted_data = []
+    for entry in received_data:
+        # Reformat the data
+        entry = entry.replace(' °C', '').replace(' mg/kg', '').replace('%', '')
+        entry = entry.replace('Soil Moisture Values:', 'Soil Moisture ')
+        entry = entry.replace('Sensor ', 'Soil MoistureSensor')
+        formatted_data.append(entry)
+    
+    return '<br>'.join(formatted_data), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8081)
