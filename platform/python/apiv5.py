@@ -83,7 +83,7 @@ def update_arduino():
             return jsonify({'error': 'Not enough data parts received'}), 400
 
         temperature = float(parts[0].split(': ')[1].split(' ')[0])
-        humidity = float(parts[1].split(': ')[1].split(' ')[0])
+        humidity = float(parts[1].split(': ')[1])
         light = float(parts[2].split(': ')[1].split(' ')[0])
         nitrogen = int(parts[3].split(': ')[1].split(' ')[0])
         phosphorus = int(parts[4].split(': ')[1].split(' ')[0])
@@ -160,6 +160,43 @@ def get_data():
             'arduino_data': arduino_data,
             'esp32_data': esp32_data
         })
+    except Error as e:
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/arduino-data', methods=['GET'])
+def get_arduino_data():
+    try:
+        connection = mysql.connector.connect(
+            host=MYSQL_HOST,
+            port=MYSQL_PORT,
+            database=MYSQL_DATABASE,
+            user=MYSQL_USER,
+            password=MYSQL_PASSWORD
+        )
+
+        cursor = connection.cursor()
+        
+        # Fetch data from arduino_data table
+        cursor.execute("SELECT * FROM arduino_data")
+        arduino_rows = cursor.fetchall()
+        arduino_data = []
+        for row in arduino_rows:
+            arduino_data.append({
+                'id': row[0],
+                'timestamp': row[1],
+                'temperature': row[2],
+                'humidity': row[3],
+                'light': row[4],
+                'nitrogen': row[5],
+                'phosphorus': row[6],
+                'potassium': row[7]
+            })
+        
+        return jsonify(arduino_data)
     except Error as e:
         return jsonify({'error': str(e)}), 500
     finally:
