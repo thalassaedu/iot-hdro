@@ -1,0 +1,204 @@
+#include <SoftwareSerial.h>
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_TSL2591.h>
+#include <DHT11.h>
+
+// Pin definitions
+#define INT_PIN 5 // Interrupt pin for light sensor
+#define DHTPIN 6  // DHT11 data pin
+#define RE 8      // RE pin for RS485 module
+#define DE 7      // DE pin for RS485 module
+
+// Modbus RTU requests for reading NPK values
+const byte nitro[] = {0x01, 0x03, 0x00, 0x1e, 0x00, 0x01, 0xe4, 0x0c};
+const byte phos[] = {0x01, 0x03, 0x00, 0x1f, 0x00, 0x01, 0xb5, 0xcc};
+const byte pota[] = {0x01, 0x03, 0x00, 0x20, 0x00, 0x01, 0x85, 0xc0};
+
+// A variable used to store NPK values
+byte values[11];
+
+// Create the sensor objects
+Adafruit_TSL2591 tsl = Adafruit_TSL2591(2591);
+DHT11 dht11(DHTPIN);
+
+// Flag to indicate interrupt
+volatile bool lightSensorTriggered = false;
+
+// Sets up a new SoftwareSerial object
+SoftwareSerial mod(2, 3); // RX, TX
+SoftwareSerial espSerial(10, 11); // RX, TX
+
+// Function to display TSL2591 sensor details
+void displaySensorDetails() {
+  sensor_t sensor;
+  tsl.getSensor(&sensor);
+  Serial.println("------------------------------------");
+  Serial.print("Sensor: "); Serial.println(sensor.name);
+  Serial.print("Driver Ver: "); Serial.println(sensor.version);
+  Serial.print("Unique ID: "); Serial.println(sensor.sensor_id);
+  Serial.print("Max Value: "); Serial.print(sensor.max_value); Serial.println(" lux");
+  Serial.print("Min Value: "); Serial.print(sensor.min_value); Serial.println(" lux");
+  Serial.print("Resolution: "); Serial.print(sensor.resolution); Serial.println(" lux");
+  Serial.println("------------------------------------");
+  Serial.println("");
+  delay(500);
+}
+
+// Function to configure the TSL2591 sensor
+void configureSensor() {
+  tsl.setGain(TSL2591_GAIN_LOW); // Low gain (1x)
+  tsl.setTiming(TSL2591_INTEGRATIONTIME_100MS); // Medium integration time (100ms)
+}
+
+// Interrupt service routine for light sensor
+void lightSensorISR() {
+  lightSensorTriggered = true; // Set the flag when interrupt occurs
+}
+
+void setup() {
+  // Initialize serial communication
+  Serial.begin(9600);
+  espSerial.begin(9600);
+  Serial.println("Sensor Test");
+
+  // Initialize the DHT11 sensor
+  dht11 = DHT11(DHTPIN);
+
+  // Initialize the TSL2591 light sensor
+  pinMode(INT_PIN, INPUT_PULLUP); // Set INT pin as input with pull-up resistor
+  attachInterrupt(digitalPinToInterrupt(INT_PIN), lightSensorISR, FALLING);
+
+  if (!tsl.begin()) {
+    Serial.print("No TSL2591 detected ... check your wiring or I2C ADDR!");
+    while (1);
+  }
+
+  // Display basic information about the TSL2591 sensor
+  displaySensorDetails();
+  // Configure the TSL2591 sensor
+  configureSensor();
+
+  // Initialize the SoftwareSerial object for RS485 communication
+  mod.begin(9600);
+
+  // Define pin modes for RE and DE
+  pinMode(RE, OUTPUT);
+  pinMode(DE, OUTPUT);
+
+  Serial.println("Initialization complete.\n");
+}
+
+void loop() {
+  int temperature = 0;
+  int humidity = 0;
+
+  // Read temperature and humidity from DHT11 sensor
+  int result = dht11.readTemperatureHumidity(temperature, humidity);
+
+  String data = "";
+
+  // Check the results of the DHT11 readings
+  if (result == 0) {
+    data += "Temperature: ";
+    data += temperature;
+    data += " °C, Humidity: ";
+    data += humidity;
+  } else {
+    data += "Error reading from DHT11 sensor: ";
+    data += DHT11::getErrorString(result);
+  }
+
+  // Check for new light sensor event triggered by the interrupt
+  if (lightSensorTriggered) {
+    // Clear the interrupt flag
+    lightSensorTriggered = false;
+    // Clear the interrupt on the sensor
+    tsl.clearInterrupt();
+  }
+
+  // Read and display the light level in lux
+  sensors_event_t event;
+  tsl.getEvent(&event);
+
+  if (event.light) {
+    data += ", Light Value: ";
+    data += event.light;
+    data += " lux";
+  } else {
+    // If event.light = 0 lux the sensor is probably saturated
+    // and no reliable data could be generated
+    data += ", Sensor overload";
+  }
+
+  // Read NPK values
+  byte val1 = nitrogen();
+  delay(250);
+  byte val2 = phosphorous();
+  delay(250);
+  byte val3 = potassium();
+  delay(250);
+
+  // Append NPK values to the data string
+  data += ", Nitrogen: ";
+  data += val1;
+  data += " mg/kg, Phosphorous: ";
+  data += val2;
+  data += " mg/kg, Potassium: ";
+  data += val3;
+  data += " mg/kg";
+
+  // Print the combined data to the Serial monitor
+  Serial.println(data);
+  espSerial.println(data);
+
+  delay(3000);
+}
+
+byte nitrogen() {
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+
+  if (mod.write(nitro, sizeof(nitro)) == 8) {
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+
+    for (byte i = 0; i < 7; i++) {
+      values[i] = mod.read();
+    }
+  }
+  return values[4];
+}
+
+byte phosphorous() {
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+
+  if (mod.write(phos, sizeof(phos)) == 8) {
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+
+    for (byte i = 0; i < 7; i++) {
+      values[i] = mod.read();
+    }
+  }
+  return values[4];
+}
+
+byte potassium() {
+  digitalWrite(DE, HIGH);
+  digitalWrite(RE, HIGH);
+  delay(10);
+
+  if (mod.write(pota, sizeof(pota)) == 8) {
+    digitalWrite(DE, LOW);
+    digitalWrite(RE, LOW);
+
+    for (byte i = 0; i < 7; i++) {
+      values[i] = mod.read();
+    }
+  }
+  return values[4];
+}

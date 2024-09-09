@@ -1,0 +1,104 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+// Wi-Fi credentials
+const char* ssid = "WLAN-45K2FB";
+const char* password = "51265629093004418224";
+
+// Server address
+const char* serverName = "http://192.168.2.162:8081/update_data";
+
+// Define the pins for each soil moisture sensor (using ADC1 pins)
+const int soilMoisturePins[6] = {32, 33, 34, 35, 36, 39};
+
+// Define the minimum and maximum sensor values for calibration
+const int airValue = 4095; // Analog value in dry air
+const int waterValue = 0;  // Analog value in water
+
+// Initialize Serial2 for communication with Arduino
+#define RXD2 16
+#define TXD2 17
+
+void setup() {
+    // Initialize serial communication at 9600 baud rate
+    Serial.begin(9600);
+    Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2); // RX on GPIO 16, TX on GPIO 17
+    Serial.println("ESP32 ready to communicate");
+
+    // Connect to Wi-Fi
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting to Wi-Fi...");
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+    Serial.println("Connected!");
+}
+
+void loop() {
+    // Read soil moisture sensor values
+    String soilMoistureData = "Soil Moisture Values: ";
+    for (int i = 0; i < 6; i++) {
+        int soilMoistureValue = analogRead(soilMoisturePins[i]);
+        int soilMoisturePercent = map(soilMoistureValue, airValue, waterValue, 0, 100);
+        soilMoisturePercent = constrain(soilMoisturePercent, 0, 100);
+        soilMoistureData += "Sensor " + String(i + 1) + ": " + String(soilMoisturePercent) + "%, ";
+    }
+
+    // Remove the trailing comma and space
+    soilMoistureData = soilMoistureData.substring(0, soilMoistureData.length() - 2);
+
+    // Check for data on Serial2 from Arduino
+    if (Serial2.available()) {
+        String arduinoData = Serial2.readStringUntil('\n');
+        Serial.print("Received data from Arduino: ");
+        Serial.println(arduinoData);
+
+        // Combine Arduino data and soil moisture data
+        String combinedData = arduinoData + "\n" + soilMoistureData;
+
+        // Send combined data to the server
+        if (WiFi.status() == WL_CONNECTED) {
+            HTTPClient http;
+            http.begin(serverName);
+            http.addHeader("Content-Type", "text/plain");
+
+            int httpResponseCode = http.POST(combinedData);
+            if (httpResponseCode > 0) {
+                String response = http.getString();
+                Serial.println(httpResponseCode);
+                Serial.println(response);
+            } else {
+                Serial.print("Error on sending POST: ");
+                Serial.println(httpResponseCode);
+            }
+            http.end();
+        } else {
+            Serial.println("Wi-Fi not connected");
+        }
+    } else {
+        Serial.println("No data available from Serial2");
+
+        // Send only soil moisture data to the server if no Arduino data is available
+        if (WiFi.status() == WL_CONNECTED) {
+            HTTPClient http;
+            http.begin(serverName);
+            http.addHeader("Content-Type", "text/plain");
+
+            int httpResponseCode = http.POST(soilMoistureData);
+            if (httpResponseCode > 0) {
+                String response = http.getString();
+                Serial.println(httpResponseCode);
+                Serial.println(response);
+            } else {
+                Serial.print("Error on sending POST: ");
+                Serial.println(httpResponseCode);
+            }
+            http.end();
+        } else {
+            Serial.println("Wi-Fi not connected");
+        }
+    }
+
+    delay(3000); // Delay for 3 seconds
+}

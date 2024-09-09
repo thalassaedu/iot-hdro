@@ -27,7 +27,12 @@ This is Hydroponic IOT repository.
     - pip3 install flask mysql-connector-python
 
 
+# Sketch information
+    - Latest sketch that has an information about NPK, Soil moisture, Light and humidity is residing insode .
+        - For Arduino : /Users/D073341/work/sre-cops/iot-hdro/platform/Prodution-SEP24/arduino_sketsch/arduino_09sep_sketch
+        - For ESP32 - /Users/D073341/work/sre-cops/iot-hdro/platform/Prodution-SEP24/esp32_sketch/esp32_09sep_sketch
 
+        
 # Need to create solution that will read soil moisture, environment temprature and humidity and send it to database. database will be connected via grafana
     - As this entire solution will be build on kubernetes.
     
