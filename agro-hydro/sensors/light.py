@@ -1,6 +1,6 @@
 # sensors/light.py
 from machine import Pin, I2C
-from sensors.tsl2591 import TSL2591
+from sensors.tsl2591 import TSL2591, GAIN_LOW, INTEGRATIONTIME_100MS  # Import constants from tsl2591
 import time
 
 # Pin definitions for I2C and interrupt
@@ -10,12 +10,12 @@ SDA_PIN = 21
 
 # Initialize I2C and sensor
 i2c = I2C(0, scl=Pin(SCL_PIN), sda=Pin(SDA_PIN), freq=400000)
-tsl = TSL2591(i2c)
+tsl = TSL2591(i2c)  # Initialize the TSL2591 sensor
 
-# Function to configure the sensor
+# Function to configure the sensor using imported constants
 def configure_sensor():
-    tsl.set_gain(TSL2591.GAIN_LOW)  # Set to low gain (1x)
-    tsl.set_integration_time(TSL2591.INTEGRATIONTIME_100MS)  # Set integration time to 100ms
+    tsl.set_gain(GAIN_LOW)  # Set gain to low (1x)
+    tsl.set_integration_time(INTEGRATIONTIME_100MS)  # Set integration time to 100ms
     print("Sensor configured successfully.")
 
 # Improved function for lux calculation
