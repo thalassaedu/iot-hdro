@@ -1,73 +1,65 @@
-import tsl2591
+from machine import Pin, I2C
 import time
-import RPi.GPIO as GPIO
+from tsl2591 import TSL2591
 
-# Pin definitions (use BCM mode for GPIO numbers)
+# Pin definitions
 INT_PIN = 25
+SCL_PIN = 22
+SDA_PIN = 21
+
+# Constants for improved lux calculation
+GAIN_LOW = 0x00  # Low gain (1x)
+INTEGRATIONTIME_100MS = 0x00  # Integration time for 100ms
+TSL2591_LUX_DF = 408.0  # Adjusted constant for more accurate lux calculation
+
+# Initialize I2C
+i2c = I2C(0, scl=Pin(SCL_PIN), sda=Pin(SDA_PIN), freq=400000)
+
+# Perform I2C scan to check connected devices
+devices = i2c.scan()
+if 0x29 not in devices:
+    raise Exception("TSL2591 not detected on the I2C bus.")
 
 # Initialize the TSL2591 sensor
-sensor = tsl2591.Sensor()
-
-# Interrupt flag
-light_sensor_triggered = False
-
-# Interrupt handler function
-def light_sensor_isr(channel):
-    global light_sensor_triggered
-    light_sensor_triggered = True
-
-# Configure the interrupt pin using RPi.GPIO
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(INT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Set INT pin as input with pull-up resistor
-GPIO.add_event_detect(INT_PIN, GPIO.FALLING, callback=light_sensor_isr)
-
-# Function to display sensor details
-def display_sensor_details():
-    print("------------------------------------")
-    print("Sensor:       TSL2591")
-    print("Driver Ver:   Python")
-    print("Unique ID:    2591")
-    print("Max Value:    88,000 lux")
-    print("Min Value:    0.0038 lux")
-    print("Resolution:   0.001 lux")
-    print("------------------------------------")
+tsl = TSL2591(i2c)
 
 # Function to configure the sensor
 def configure_sensor():
-    # Set gain (low gain for high light levels)
-    sensor.set_gain(tsl2591.GAIN_LOW)  # Low gain (1x)
+    print("Configuring sensor with low gain and 100ms integration time...")
+    tsl.set_gain(GAIN_LOW)  # Low gain (1x)
+    tsl.set_integration_time(INTEGRATIONTIME_100MS)  # Medium integration time (100ms)
+    print("Sensor configured successfully.")
 
-    # Set integration time (shorter time for high light levels)
-    sensor.set_timing(tsl2591.INTEGRATIONTIME_100MS)  # Medium integration time (100ms)
+# Improved function for lux calculation
+def calculate_lux(ch0, ch1, cpl):
+    if ch0 == 0:  # Prevent division by zero
+        return None
+    lux = (((0.8678 * float(ch0)) - float(ch1)) * (1.0 - (float(ch1) / float(ch0)))) / cpl
+    return lux
 
-# Initialize the sensor and display details
-display_sensor_details()
+# Initialize the sensor and configure settings
 configure_sensor()
-print("Light Sensor Test")
+print("Light Sensor Test Starting...")
 
-try:
-    while True:
-        # Check if the light sensor was triggered
-        if light_sensor_triggered:
-            # Clear the interrupt flag
-            light_sensor_triggered = False
+# Calculate CPL (Counts Per Lux) value based on integration time and gain
+atime = 100.0  # Integration time in ms
+again = 1.0  # Gain multiplier (1x for low gain)
+cpl = (atime * again) / TSL2591_LUX_DF
 
-            # Read the sensor values
-            full_spectrum, infrared = sensor.get_full_luminosity()
-            lux = sensor.calculate_lux(full_spectrum, infrared)
+while True:
+    try:
+        # Read sensor values
+        full_spectrum, infrared = tsl.get_full_luminosity()
+        print(f"Full Spectrum: {full_spectrum}, Infrared: {infrared}")  # Debug print
 
-            # Display the results
-            if lux is not None:
-                print(f"Full Spectrum (IR + Visible): {full_spectrum}")
-                print(f"Infrared value: {infrared}")
-                print(f"Visible value: {full_spectrum - infrared}")
-                print(f"Lux: {lux} lux")
-            else:
-                print("Sensor overload or error")
+        # Calculate and display lux using the improved formula
+        lux = calculate_lux(full_spectrum, infrared, cpl)
+        if lux is not None:
+            print(f"Light Level: {lux:.2f} lux")
+        else:
+            print("Sensor overload or not reading correctly")
 
-        time.sleep(2)  # Wait for 2 seconds between readings
+    except Exception as e:
+        print(f"Failed to read sensor data: {e}")
 
-except KeyboardInterrupt:
-    # Clean up GPIO on keyboard interrupt
-    GPIO.cleanup()
-    print("Program terminated")
+    time.sleep(2)  # Wait for 2 seconds between readings
