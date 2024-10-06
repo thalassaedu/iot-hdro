@@ -3,19 +3,18 @@ from machine import Pin, I2C
 from sensors.tsl2591 import TSL2591
 import time
 
-# Define I2C pins for TSL2591
+# Define the I2C pins for the TSL2591 sensor
 SCL_PIN = 22  # GPIO pin for SCL
 SDA_PIN = 21  # GPIO pin for SDA
 
-# Initialize I2C and TSL2591 sensor
-i2c = I2C(0, scl=Pin(SCL_PIN), sda=Pin(SDA_PIN), freq=100000)  # Set I2C frequency to 100 kHz for stability
-tsl = TSL2591(i2c)
+# Initialize I2C communication and the TSL2591 sensor
+i2c = I2C(0, scl=Pin(SCL_PIN), sda=Pin(SDA_PIN), freq=100000)  # Set I2C frequency to 100kHz for stability
+tsl = TSL2591(i2c)  # Create TSL2591 sensor object
 
 # Function to configure the sensor settings
 def configure_sensor():
     print("Configuring TSL2591 sensor with optimal settings...")
-    # Use the correct gain and integration time for low light conditions
-    tsl.set_gain(0x10)  # Set to Medium gain (25x)
+    tsl.set_gain(0x10)  # Medium gain (25x) for improved sensitivity
     tsl.set_integration_time(0x01)  # Integration time 200ms for better accuracy
     print("TSL2591 sensor configured successfully.")
 
@@ -28,13 +27,20 @@ def get_light_level():
 
         # Calculate Counts Per Lux (CPL) value based on integration time and gain
         atime = 200.0  # Integration time in ms
-        again = 25.0  # Gain multiplier (25x for medium gain)
-        cpl = (atime * again) / 408.0  # Adjust CPL based on the datasheet constant
+        again = 25.0   # Gain multiplier (25x for medium gain)
+        LUX_DF = 408.0  # Lux coefficient as per TSL2591 datasheet
+        cpl = (atime * again) / LUX_DF  # Counts Per Lux calculation
 
-        # Calculate lux based on sensor readings and CPL
-        lux = tsl.calculate_lux(full_spectrum, infrared) if cpl != 0 else 0
-        print(f"Debug: Calculated Lux: {lux}")  # Print calculated lux for debugging
+        # Calculate lux using the formula: (Full Spectrum - Infrared) / CPL
+        if cpl != 0:
+            lux = (full_spectrum - infrared) / cpl
+        else:
+            lux = 0
+
+        # Print intermediate values for debugging
+        print(f"Debug: CPL: {cpl}, Calculated Lux: {lux}")
         return max(lux, 0)  # Return 0 if lux is negative or invalid
+
     except Exception as e:
         print(f"Failed to read from light sensor: {e}")
         return 0
