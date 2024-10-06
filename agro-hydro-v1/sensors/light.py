@@ -28,17 +28,18 @@ def get_light_level():
         # Calculate Counts Per Lux (CPL)
         integration_time_ms = 200.0  # Integration time in milliseconds
         gain = 25.0  # Gain multiplier for medium gain setting
-        LUX_DF = 1032.9  # Adjusted Lux coefficient from user feedback and datasheet
+        LUX_DF = 1032.9  # Adjusted Lux coefficient based on the latest analysis
         cpl = (integration_time_ms * gain) / LUX_DF
 
-        # Improved lux calculation with IR ratio correction
-        if full_spectrum > 0:
-            ratio = infrared / full_spectrum
-            lux = ((full_spectrum - infrared) * (1.0 - ratio)) / cpl
+        # Calculate lux using dual equations
+        if cpl != 0:
+            lux1 = (full_spectrum - 1.64 * infrared) / cpl
+            lux2 = (0.59 * full_spectrum - 0.86 * infrared) / cpl
+            lux = max(lux1, lux2)  # Use the maximum value of both equations as the final lux value
         else:
             lux = 0
 
-        print(f"Debug: CPL: {cpl}, Visible Light: {full_spectrum - infrared}, Calculated Lux: {lux}")
+        print(f"Debug: CPL: {cpl}, Lux1: {lux1}, Lux2: {lux2}, Final Lux: {lux}")
         return max(lux, 0)  # Return 0 if lux is negative or invalid
 
     except Exception as e:
