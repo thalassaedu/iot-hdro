@@ -1,4 +1,4 @@
-# Import necessary modules
+# main.py
 from sensors import npk, dth, light
 import time
 
@@ -15,7 +15,7 @@ def main():
             p_value = npk.read_p() if npk.read_p() is not None else "N/A"
             k_value = npk.read_k() if npk.read_k() is not None else "N/A"
         except Exception as npk_error:
-            print(f"Error reading NPK sensor: {npk_error}")
+            print("Error reading NPK sensor: {}".format(npk_error))
 
         try:
             # Attempt to read DHT sensor values
@@ -23,7 +23,7 @@ def main():
             if temperature is None or humidity is None:
                 temperature, humidity = "N/A", "N/A"
         except Exception as dht_error:
-            print(f"Error reading DHT sensor: {dht_error}")
+            print("Error reading DHT sensor: {}".format(dht_error))
 
         try:
             # Attempt to read light sensor value
@@ -31,12 +31,11 @@ def main():
             if lux_value is None:
                 lux_value = "N/A"
         except Exception as light_error:
-            print(f"Error reading light sensor: {light_error}")
+            print("Error reading light sensor: {}".format(light_error))
 
-        # Correct formatted print statement
-        print(f"N: {n_value} mg/kg, P: {p_value} mg/kg, K: {k_value} mg/kg, "
-              f"Temperature: {temperature} °C, Humidity: {humidity} %, "
-              f"Lux: {lux_value}")
+        # Correct formatted print statement using .format()
+        print("N: {} mg/kg, P: {} mg/kg, K: {} mg/kg, Temperature: {} °C, Humidity: {} %, Lux: {}".format(
+              n_value, p_value, k_value, temperature, humidity, lux_value))
 
         # Wait for a few seconds before reading values again
         time.sleep(2)
