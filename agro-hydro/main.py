@@ -1,5 +1,5 @@
 # main.py
-from sensors import npk, dth, light
+from sensors import npk, dth
 import time
 
 def main():
@@ -15,8 +15,8 @@ def main():
         print(f"Temperature: {temperature} °C, Humidity: {humidity} %")
 
         # Read light level
-        light_level = light.get_light_level()
-        print(f"Light Level: {light_level} lux")
+        #light_level = light.get_light_level()
+        #print(f"Light Level: {light_level} lux")
 
         # Wait for a few seconds before next reading
         time.sleep(2)
