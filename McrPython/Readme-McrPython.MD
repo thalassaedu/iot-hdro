@@ -22,6 +22,8 @@
         mpremote connect /dev/ttyUSB0 fs cp main.py :
         mpremote connect /dev/ttyUSB0 exec "import main"
 
+        mpremote connect /dev/ttyUSB0 run main.py
+
 
 
 

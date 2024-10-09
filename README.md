@@ -1,7 +1,7 @@
 # iot-hdro
 This is Hydroponic IOT repository.
 
-1. The entire solution is based on RKE k8 cluster. 
+1. The entire solution is based on RKE k8 cluster.  - /Users/D073341/work/sre-cops/thaedu-course/k8/RKE-Installation.md
 2. To access cluster :
     - kube-rke on my mac machine.
     - Cluster is running on 3 nodes : 192.168.2.177, 178,179.
