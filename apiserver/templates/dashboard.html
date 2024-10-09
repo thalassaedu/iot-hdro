@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sensor Data Dashboard</title>
+    <title>Enhanced Sensor Data Dashboard</title>
+    <!-- Import Chart.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* General styling */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -14,87 +15,205 @@
         }
         .container {
             width: 90%;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 50px auto;
+            text-align: center;
         }
         h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 20px;
+            color: #4A4A4A;
+            margin-bottom: 40px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
+        .chart-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+        .chart-card {
+            width: 45%;
+            background: #fff;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
-        th, td {
-            padding: 15px;
-            text-align: center;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #4CAF50;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        tr:hover {
-            background-color: #ddd;
-        }
-        .value {
-            font-size: 1.2em;
-        }
-        .high-value {
-            color: #e74c3c;
-            font-weight: bold;
-        }
-        .normal-value {
-            color: #2ecc71;
-        }
-        .low-value {
-            color: #f39c12;
+        .chart-card h2 {
+            margin: 0;
+            padding: 0;
+            font-size: 1.5em;
+            color: #333;
         }
         .footer {
             text-align: center;
-            margin: 20px 0;
+            margin: 30px 0;
             color: #666;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Sensor Data Dashboard</h1>
-        <table>
-            <tr>
-                <th>Timestamp</th>
-                <th>Nitrogen (N)</th>
-                <th>Phosphorus (P)</th>
-                <th>Potassium (K)</th>
-                <th>Temperature (°C)</th>
-                <th>Humidity (%)</th>
-                <th>Lux</th>
-            </tr>
-            {% for entry in sensor_data %}
-            <tr>
-                <td>{{ entry.timestamp }}</td>
-                <td class="value">{{ entry.N }}</td>
-                <td class="value">{{ entry.P }}</td>
-                <td class="value">{{ entry.K }}</td>
-                <td class="value {% if entry.Temperature|float > 30 %}high-value{% elif entry.Temperature|float < 15 %}low-value{% else %}normal-value{% endif %}">
-                    {{ entry.Temperature }}
-                </td>
-                <td class="value {% if entry.Humidity|float > 70 %}high-value{% elif entry.Humidity|float < 30 %}low-value{% else %}normal-value{% endif %}">
-                    {{ entry.Humidity }}
-                </td>
-                <td class="value">{{ entry.Lux }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+        <h1>Enhanced Real-Time Sensor Data Dashboard</h1>
+        <div class="chart-container">
+            <!-- Line Chart for Temperature over Time -->
+            <div class="chart-card">
+                <h2>Temperature Over Time (°C)</h2>
+                <canvas id="temperatureChart"></canvas>
+            </div>
+
+            <!-- Line Chart for Humidity over Time -->
+            <div class="chart-card">
+                <h2>Humidity Over Time (%)</h2>
+                <canvas id="humidityChart"></canvas>
+            </div>
+
+            <!-- Bar Chart for NPK Levels -->
+            <div class="chart-card">
+                <h2>Nitrogen, Phosphorus, Potassium Levels</h2>
+                <canvas id="npkChart"></canvas>
+            </div>
+
+            <!-- Line Chart for Lux over Time -->
+            <div class="chart-card">
+                <h2>Lux Levels Over Time</h2>
+                <canvas id="luxChart"></canvas>
+            </div>
+        </div>
         <div class="footer">
-            <p>Data updates every few seconds automatically</p>
+            <p>Data is fetched and updated automatically every 5 seconds</p>
         </div>
     </div>
+    <script>
+        // Create global variables to store the charts
+        let temperatureChart, humidityChart, npkChart, luxChart;
+
+        // Function to initialize charts
+        function initializeCharts() {
+            const ctxTemp = document.getElementById('temperatureChart').getContext('2d');
+            const ctxHumidity = document.getElementById('humidityChart').getContext('2d');
+            const ctxNPK = document.getElementById('npkChart').getContext('2d');
+            const ctxLux = document.getElementById('luxChart').getContext('2d');
+
+            temperatureChart = new Chart(ctxTemp, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: [],
+                        borderColor: '#FF6384',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Timestamp' } },
+                        y: { title: { display: true, text: 'Temperature (°C)' } }
+                    }
+                }
+            });
+
+            humidityChart = new Chart(ctxHumidity, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Humidity (%)',
+                        data: [],
+                        borderColor: '#36A2EB',
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Timestamp' } },
+                        y: { title: { display: true, text: 'Humidity (%)' } }
+                    }
+                }
+            });
+
+            npkChart = new Chart(ctxNPK, {
+                type: 'bar',
+                data: {
+                    labels: ['Nitrogen (N)', 'Phosphorus (P)', 'Potassium (K)'],
+                    datasets: [{
+                        label: 'NPK Levels',
+                        data: [],
+                        backgroundColor: ['#4BC0C0', '#FFCE56', '#FF6384'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'NPK Components' } },
+                        y: { title: { display: true, text: 'Value (mg/kg)' } }
+                    }
+                }
+            });
+
+            luxChart = new Chart(ctxLux, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Lux Levels',
+                        data: [],
+                        borderColor: '#FFCE56',
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Timestamp' } },
+                        y: { title: { display: true, text: 'Lux' } }
+                    }
+                }
+            });
+        }
+
+        // Function to update charts with new data
+        function updateCharts(data) {
+            const labels = data.map(entry => entry.timestamp);
+            const tempData = data.map(entry => entry.Temperature);
+            const humidityData = data.map(entry => entry.Humidity);
+            const luxData = data.map(entry => entry.Lux);
+
+            temperatureChart.data.labels = labels;
+            temperatureChart.data.datasets[0].data = tempData;
+            temperatureChart.update();
+
+            humidityChart.data.labels = labels;
+            humidityChart.data.datasets[0].data = humidityData;
+            humidityChart.update();
+
+            luxChart.data.labels = labels;
+            luxChart.data.datasets[0].data = luxData;
+            luxChart.update();
+
+            // Update NPK chart with the last entry
+            const latestEntry = data[0];
+            npkChart.data.datasets[0].data = [latestEntry.N, latestEntry.P, latestEntry.K];
+            npkChart.update();
+        }
+
+        // Fetch historical data and update charts every 5 seconds
+        function fetchHistoricalData() {
+            fetch('/historical-data')
+                .then(response => response.json())
+                .then(data => {
+                    updateCharts(data);
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // Initialize charts and set interval for data fetching
+        initializeCharts();
+        setInterval(fetchHistoricalData, 5000);
+        fetchHistoricalData();  // Initial data fetch
+    </script>
 </body>
 </html>
