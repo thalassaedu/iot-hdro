@@ -5,56 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sensor Data Dashboard</title>
     <style>
+        /* General styling */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4;
+            background: #f7f9fc;
         }
         .container {
-            width: 80%;
+            width: 90%;
+            max-width: 1200px;
             margin: 50px auto;
             text-align: center;
         }
+        h1 {
+            color: #4A4A4A;
+        }
         .card {
+            display: inline-block;
             background: #fff;
             padding: 20px;
-            margin: 20px;
+            margin: 15px;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 250px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
         }
         .card h2 {
-            margin: 0;
+            color: #333;
+            font-size: 1.5em;
+            margin: 10px 0;
+        }
+        .card p {
+            font-size: 1.2em;
+            color: #666;
+        }
+        .value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #4A90E2;
+        }
+        /* Card color styles */
+        .card.nitrogen { background: #e3f2fd; }
+        .card.phosphorus { background: #fce4ec; }
+        .card.potassium { background: #e8f5e9; }
+        .card.temperature { background: #fff3e0; }
+        .card.humidity { background: #f1f8e9; }
+        .card.lux { background: #f3e5f5; }
+        /* Footer style */
+        .footer {
+            margin: 30px 0;
+            color: #999;
+            font-size: 0.9em;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Sensor Data Dashboard</h1>
-        <div class="card">
-            <h2>Nitrogen (N): <span id="n_value">Loading...</span> mg/kg</h2>
+        <h1>Real-Time Sensor Data Dashboard</h1>
+        <div class="card nitrogen">
+            <h2>Nitrogen (N)</h2>
+            <p class="value" id="n_value">Loading...</p>
+            <p>mg/kg</p>
         </div>
-        <div class="card">
-            <h2>Phosphorus (P): <span id="p_value">Loading...</span> mg/kg</h2>
+        <div class="card phosphorus">
+            <h2>Phosphorus (P)</h2>
+            <p class="value" id="p_value">Loading...</p>
+            <p>mg/kg</p>
         </div>
-        <div class="card">
-            <h2>Potassium (K): <span id="k_value">Loading...</span> mg/kg</h2>
+        <div class="card potassium">
+            <h2>Potassium (K)</h2>
+            <p class="value" id="k_value">Loading...</p>
+            <p>mg/kg</p>
         </div>
-        <div class="card">
-            <h2>Temperature: <span id="temperature">Loading...</span> °C</h2>
+        <div class="card temperature">
+            <h2>Temperature</h2>
+            <p class="value" id="temperature">Loading...</p>
+            <p>°C</p>
         </div>
-        <div class="card">
-            <h2>Humidity: <span id="humidity">Loading...</span> %</h2>
+        <div class="card humidity">
+            <h2>Humidity</h2>
+            <p class="value" id="humidity">Loading...</p>
+            <p>%</p>
         </div>
-        <div class="card">
-            <h2>Lux: <span id="lux">Loading...</span></h2>
+        <div class="card lux">
+            <h2>Lux</h2>
+            <p class="value" id="lux">Loading...</p>
+            <p>Lux</p>
+        </div>
+        <div class="footer">
+            <p>Data updates automatically every 5 seconds</p>
         </div>
     </div>
     <script>
+        // Function to fetch and update sensor data
         function fetchSensorData() {
             fetch('/latest-sensor-data')
                 .then(response => response.json())
                 .then(data => {
+                    // Update HTML elements with new data
                     document.getElementById('n_value').textContent = data.N || 'N/A';
                     document.getElementById('p_value').textContent = data.P || 'N/A';
                     document.getElementById('k_value').textContent = data.K || 'N/A';
