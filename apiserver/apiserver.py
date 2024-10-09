@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-import mysql.connector
+import pymysql
 import json
 
 app = Flask(__name__)
@@ -13,9 +13,16 @@ db_config = {
     'port': 30036  # Specify the custom port for MySQL
 }
 
-# Create a MySQL database connection
+# Create a MySQL database connection using PyMySQL
 def get_db_connection():
-    return mysql.connector.connect(**db_config)
+    return pymysql.connect(
+        host=db_config['host'],
+        user=db_config['user'],
+        password=db_config['password'],
+        database=db_config['database'],
+        port=db_config['port'],
+        cursorclass=pymysql.cursors.DictCursor
+    )
 
 # Endpoint to receive sensor data from ESP32
 @app.route('/sensor-data', methods=['POST'])
