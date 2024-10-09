@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Data Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: 50px auto;
+            text-align: center;
+        }
+        .card {
+            background: #fff;
+            padding: 20px;
+            margin: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .card h2 {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sensor Data Dashboard</h1>
+        <div class="card">
+            <h2>Nitrogen (N): <span id="n_value">Loading...</span> mg/kg</h2>
+        </div>
+        <div class="card">
+            <h2>Phosphorus (P): <span id="p_value">Loading...</span> mg/kg</h2>
+        </div>
+        <div class="card">
+            <h2>Potassium (K): <span id="k_value">Loading...</span> mg/kg</h2>
+        </div>
+        <div class="card">
+            <h2>Temperature: <span id="temperature">Loading...</span> °C</h2>
+        </div>
+        <div class="card">
+            <h2>Humidity: <span id="humidity">Loading...</span> %</h2>
+        </div>
+        <div class="card">
+            <h2>Lux: <span id="lux">Loading...</span></h2>
+        </div>
+    </div>
+    <script>
+        function fetchSensorData() {
+            fetch('/latest-sensor-data')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('n_value').textContent = data.N || 'N/A';
+                    document.getElementById('p_value').textContent = data.P || 'N/A';
+                    document.getElementById('k_value').textContent = data.K || 'N/A';
+                    document.getElementById('temperature').textContent = data.Temperature || 'N/A';
+                    document.getElementById('humidity').textContent = data.Humidity || 'N/A';
+                    document.getElementById('lux').textContent = data.Lux || 'N/A';
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        // Fetch data every 5 seconds
+        setInterval(fetchSensorData, 5000);
+
+        // Initial fetch
+        fetchSensorData();
+    </script>
+</body>
+</html>
