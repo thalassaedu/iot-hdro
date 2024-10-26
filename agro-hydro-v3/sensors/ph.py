@@ -1,35 +1,18 @@
 from machine import ADC, Pin
 from time import sleep
 
-# Setup ADC on GPIO 32 for the pH sensor
-pH_sensor = ADC(Pin(32))
-pH_sensor.atten(ADC.ATTN_11DB)  # Set to 3.6V range
+# Set up the ADC on pin 32
+pH_pin = ADC(Pin(32))
 
-# Calibration constants
-calibration_value = 21.34
-sensitivity = -5.7
-
-def read_voltage():
-    # Take multiple readings to average out noise
-    readings = [pH_sensor.read() for _ in range(10)]
-    avg_reading = sum(readings) / len(readings)
-    voltage = avg_reading / 4095 * 3.3
-    return voltage
-
-def check_sensor_state():
-    voltage = read_voltage()
-    # Calculate pH for reference (optional)
-    pH_value = sensitivity * voltage + calibration_value
-    
-    # Print both the raw voltage and the pH value
-    print(f"Voltage: {voltage:.2f}V, pH: {pH_value:.2f}")
-    
-    # Simple logic to differentiate between in water and out of water
-    if voltage > 1.5:  # Voltage threshold to indicate "in water"
-        print("Sensor is in water.")
-    else:
-        print("Sensor is out of water.")
+# Configure the ADC attenuation (0db gives 0-1V range; adjust if needed)
+pH_pin.atten(ADC.ATTN_11DB)  # 11dB attenuation provides a 0-3.3V input range
 
 while True:
-    check_sensor_state()
-    sleep(1)
+    # Read the analog value and convert it to voltage
+    pH_value = pH_pin.read()  # Reads 0-4095
+    voltage = pH_value * (3.3 / 4095.0)  # Scale to 3.3V for ESP32 ADC
+
+    # Print the voltage to the serial console
+    print(voltage)
+    
+    sleep(0.5)  # Delay for 500 ms
