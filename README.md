@@ -64,4 +64,5 @@ This is Hydroponic IOT repository.
         git commit -m "updated"
         git push
 
-        
+## NFS Server
+    - root@192.168.2.230     
