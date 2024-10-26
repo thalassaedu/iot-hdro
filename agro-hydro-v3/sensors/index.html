@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zoomable Video Stream</title>
+    <style>
+        #video-container {
+            overflow: hidden;
+            width: 640px; /* Set your preferred size */
+            height: 480px;
+            position: relative;
+        }
+        #video {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <img id="video" src="http://192.168.2.217:5000/video_feed">
+    </div>
+    <div>
+        <label for="zoom-range">Zoom:</label>
+        <input type="range" id="zoom-range" min="1" max="3" step="0.1" value="1">
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const zoomRange = document.getElementById('zoom-range');
+
+        zoomRange.addEventListener('input', function () {
+            const zoomLevel = zoomRange.value;
+            video.style.transform = `scale(${zoomLevel})`;
+        });
+    </script>
+</body>
+</html>
