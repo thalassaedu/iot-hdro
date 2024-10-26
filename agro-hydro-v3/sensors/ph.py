@@ -1,22 +1,25 @@
 from machine import ADC, Pin
 from time import sleep
 
-# Setup ADC on GPIO 32
+# Initialize ADC on GPIO 32
 pH_sensor = ADC(Pin(32))
-pH_sensor.atten(ADC.ATTN_11DB)  # 0-3.6V range
+pH_sensor.atten(ADC.ATTN_11DB)  # 0-3.6V range for ESP32
 
-# Calibration constant based on known values
-calibration_value = 20.24  # Adjust based on buffer solution calibration
+# Calibration constants (adjust after calibration with buffer solutions)
+calibration_value = 21.34  # Reference voltage for neutral pH 7
+sensitivity = -5.7         # Slope for voltage to pH conversion
 
 def read_pH():
-    buffer_arr = []
-    for _ in range(10):  # Read multiple times to smooth out noise
-        buffer_arr.append(pH_sensor.read())
-        sleep(0.03)
-    buffer_arr.sort()
-    avg_value = sum(buffer_arr[2:8]) / 6  # Remove outliers and average the middle values
-    voltage = avg_value / 4095 * 3.3  # Convert ADC reading to voltage
-    pH_value = -5.70 * voltage + calibration_value  # Adjust with your calibration
+    # Gather multiple readings to reduce noise
+    readings = [pH_sensor.read() for _ in range(10)]
+    readings.sort()
+    avg_value = sum(readings[2:8]) / 6  # Average the middle values
+
+    # Convert to voltage
+    voltage = avg_value / 4095 * 3.3
+    
+    # Convert voltage to pH
+    pH_value = sensitivity * voltage + calibration_value
     return pH_value
 
 while True:
