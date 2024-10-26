@@ -46,16 +46,31 @@ def capture_image():
         print("Failed to capture image.")
         return None
 
-def extract_numbers_from_image(image_path):
+def preprocess_image(image_path):
     # Load the image
     img = cv2.imread(image_path)
-    
-    # Convert the image to grayscale
+
+    # Resize the image to make the text clearer
+    img = cv2.resize(img, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+
+    # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
-    # Use Tesseract to perform OCR on the image
-    text = pytesseract.image_to_string(gray)
-    
+
+    # Apply GaussianBlur to reduce noise
+    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    # Apply adaptive thresholding to highlight the text
+    processed_img = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+
+    return processed_img
+
+def extract_numbers_from_image(image_path):
+    # Preprocess the image
+    processed_img = preprocess_image(image_path)
+
+    # Use Tesseract to perform OCR on the processed image
+    text = pytesseract.image_to_string(processed_img)
+
     # Extract numbers from the text
     numbers = [int(s) for s in text.split() if s.isdigit()]
     return numbers
