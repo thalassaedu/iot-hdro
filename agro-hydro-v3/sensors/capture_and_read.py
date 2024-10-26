@@ -3,6 +3,7 @@ import pytesseract
 import base64
 from flask import Flask, render_template_string
 from datetime import datetime
+import numpy as np
 
 app = Flask(__name__)
 
@@ -50,26 +51,34 @@ def preprocess_image(image_path):
     # Load the image
     img = cv2.imread(image_path)
 
-    # Resize the image to make the text clearer
+    # Resize the image to enlarge text
     img = cv2.resize(img, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
 
     # Convert to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+    # Increase contrast
+    contrast = cv2.convertScaleAbs(gray, alpha=1.5, beta=0)
+
     # Apply GaussianBlur to reduce noise
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)
+    blur = cv2.GaussianBlur(contrast, (5, 5), 0)
 
-    # Apply adaptive thresholding to highlight the text
-    processed_img = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    # Apply thresholding to make the text stand out
+    _, thresh = cv2.threshold(blur, 150, 255, cv2.THRESH_BINARY_INV)
 
-    return processed_img
+    # Sharpen the image
+    kernel = np.array([[0, -1, 0], [-1, 5,-1], [0, -1, 0]])
+    sharpened = cv2.filter2D(thresh, -1, kernel)
+
+    return sharpened
 
 def extract_numbers_from_image(image_path):
     # Preprocess the image
     processed_img = preprocess_image(image_path)
 
-    # Use Tesseract to perform OCR on the processed image
-    text = pytesseract.image_to_string(processed_img)
+    # Use Tesseract with custom configuration to improve OCR accuracy
+    config = r'--oem 3 --psm 6 outputbase digits'
+    text = pytesseract.image_to_string(processed_img, config=config)
 
     # Extract numbers from the text
     numbers = [int(s) for s in text.split() if s.isdigit()]
